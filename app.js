@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+
+//Bypass SSL error
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const prog = require('caporal');
 
 //
@@ -8,6 +11,10 @@ const fsu = require('fsu');
 
 const getIP = require('external-ip')();
 const Screenshot = require('url-to-screenshot')
+
+const rp = require('request-promise');
+const $ = require('cheerio');
+const axios = require('axios');
 
 // #1 String Transformation
 prog
@@ -98,9 +105,36 @@ prog
         
     });
 
+// # Obfuscate
+
+prog
+    .command('obfuscate')
+    .argument('<message>')
+    .action((args, option, logger) => {
+        const obfuscated = args.message.split('')
+            .map(letter => `&#${letter.charCodeAt()}`)
+            .join('')
+
+        console.log(obfuscated);
+    }) 
 
 // #5 Random String
+prog
+    .command('random')
+    .option('--length <text>', '', prog.INT, 32)
+    .option('--leters <text>', '', prog.BOOL, true)
+    .action(function(args, option, logger) {
+        console.log(option);
+        let res = '';
+        let kamus = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
+        for(let i = 0; i <= option.length; i++){
+            kamus = kamus.replace(Number, '')
+            res  += kamus.charAt(Math.floor(Math.random() * kamus.length));
+            console.log(kamus);
+        }
+        console.log(res);
+    })
 
 // #6 Get IP Address in private network
 prog
@@ -145,7 +179,29 @@ prog
 
 
 // #8 Get headlines from https://www.kompas.com/
+prog
+    .command('headlines', 'Get headline from Kompas.com')
+    .action(function(){
+        const url = 'https://www.kompas.com';
 
+        rp(url)
+            .then(function(html){
+                var resultObj = []
+                
+                for(let i = 0; i < 3; i++){
+                    const link = $('a.headline__thumb__link', html)[i].attribs.href
+                    const title = $('.headline__thumb__img > img', html)[i].attribs.alt
+                    resultObj.push({
+                        Title: title,
+                        URL: link
+                    })
+                }
+                console.log(resultObj);
+            })
+            .catch(function(err){
+                console.log('Something errors found');
+            });
+    })
 
 // #9 Import/Export CSV/XLS/XLSX file.
 
@@ -155,22 +211,52 @@ prog
     .command('screenshot', 'Mengubah huruf kecil')
     .argument('<url>', 'URL yang akan kita proses')
     .option('--format <type>', 'Format <type> for screenshot', prog.STRING,'png')
+    .option('--output')
     .action(async function(args, option , logger){
+
         new Screenshot(args.url)
             .width(800)
             .height(600)
+            .ignoreSslErrors()
             .capture()
             .then(img => {
-                fsu.writeFileUnique(`screenshot{-###}.${option.format}`, img)
+                if(option.output){
+                    fs.writeFileSync(`${__dirname}/${option.output}`, img)
+                } else {
+                    fsu.writeFileUnique(`screenshot{-###}.${option.format}`, img)
+                }
                 console.log('File Saved')
             })
     });
 
+
+// #11 Get Movie
+prog
+    .command('movies', 'Get movies from 21cinemaplex')
+    .action(function(){
+        const url = 'https://21cineplex.com/comingsoon';
+        axios.get(url).then(res => { 
+          for(let i=0; i < 3; i++){
+            const link = $('.movie > a', res.data)[i].attribs.href
+            axios.get(link).then(response => {
+              const judul = $('.desc-box > h2', response.data).text()
+              const genre = $('.movie_genre', response.data).text()
+              const produser = $('.movie_produser', response.data).text()
+        
+              const sutradara = $('.movie_director', response.data).text()
+              const penulis = $('.movie_writer', response.data).text()
+              const produksi = $('.movie_distributor', response.data).text()
+              const cast = $('.movie_cast', response.data).text()
+              const sinopsis = $('.desc-synopsis', response.data).text()
+        
+              const result = judul + genre + produser + sutradara + penulis + produksi + cast + sinopsis
+        
+                console.log(result);
+            })
+          }
+        })
+    })
+
+
 prog.parse(process.argv)
 
-
-function fileName (){
-    let file = 'screenshot-001';
-    const checkFile = fs.exists(file)
-    console.log(checkFile);
-}
