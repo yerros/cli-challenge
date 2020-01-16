@@ -3,7 +3,11 @@ const prog = require('caporal');
 
 //
 const os = require('os');
+const fs = require('fs')
+const fsu = require('fsu');
+
 const getIP = require('external-ip')();
+const Screenshot = require('url-to-screenshot')
 
 // #1 String Transformation
 prog
@@ -138,7 +142,35 @@ prog
         console.log(ip);
     });
 });
+
+
+// #8 Get headlines from https://www.kompas.com/
+
+
+// #9 Import/Export CSV/XLS/XLSX file.
+
+
+// #10 Get a screenshot from a URL
+prog
+    .command('screenshot', 'Mengubah huruf kecil')
+    .argument('<url>', 'URL yang akan kita proses')
+    .option('--format <type>', 'Format <type> for screenshot', prog.STRING,'png')
+    .action(async function(args, option , logger){
+        new Screenshot(args.url)
+            .width(800)
+            .height(600)
+            .capture()
+            .then(img => {
+                fsu.writeFileUnique(`screenshot{-###}.${option.format}`, img)
+                console.log('File Saved')
+            })
+    });
+
 prog.parse(process.argv)
 
 
-
+function fileName (){
+    let file = 'screenshot-001';
+    const checkFile = fs.exists(file)
+    console.log(checkFile);
+}
