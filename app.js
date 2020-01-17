@@ -122,18 +122,36 @@ prog
 prog
     .command('random')
     .option('--length <text>', '', prog.INT, 32)
-    .option('--leters <text>', '', prog.BOOL, true)
+    .option('--letters <text>', '', prog.BOOL, true)
+    .option('--numbers <text>', '', prog.BOOL, true)
+    .option('--uppercase <text>', '', prog.BOOL, false)
+    .option('--lowercase <text>', '', prog.BOOL, false)
     .action(function(args, option, logger) {
-        console.log(option);
-        let res = '';
-        let kamus = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        //console.log(option);
+        let randomString = '';
+        let kamus = '';
+
+        if(option.numbers){
+            kamus += '0123456789'
+        }
+
+        if(option.letters){
+
+            if(option.uppercase){
+                kamus += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            } else if (option.lowercase) {
+                kamus += 'abcdefghijklmnopqrstuvwxyz'
+            } else {
+                kamus += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+            }
+            
+        }
+
 
         for(let i = 0; i <= option.length; i++){
-            kamus = kamus.replace(Number, '')
-            res  += kamus.charAt(Math.floor(Math.random() * kamus.length));
-            console.log(kamus);
+            randomString += kamus[Math.floor(Math.random()*kamus.length)]
         }
-        console.log(res);
+        console.log(randomString);
     })
 
 // #6 Get IP Address in private network
